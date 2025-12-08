@@ -21,8 +21,11 @@ struct Pairing {
 }
 
 fn main() {
+    let now = std::time::Instant::now();
     println!("{}", solve("input", 1000));
     println!("{}", solve2("input"));
+    let elapsed = now.elapsed();
+    println!("Total time to compute: {}us", elapsed.as_micros());
 }
 
 // Because of bad problem statement I created and relied on a recursive connection test
@@ -30,6 +33,10 @@ fn main() {
 fn connect(connections: &mut Vec<bool>, a: usize, b: usize) {
     let n = connections.len().isqrt();
     assert_eq!(n * n, connections.len());
+    // if a and b are connected in any way, they are connected completely
+    if connections[a * n + b] {
+        return;
+    }
     // every connection of a to every connection of b
     let mut a_conn: Vec<usize> = vec![];
     let mut b_conn: Vec<usize> = vec![];
