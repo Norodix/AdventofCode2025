@@ -13,36 +13,6 @@ impl Node {
     }
 }
 
-// Pairs is a connection matrix
-// a, b and exclude are indeces of this matrix
-fn is_connected(a: usize, b: usize, pairs: &Vec<bool>, exclude: usize) -> bool {
-    let n = pairs.len().isqrt();
-    assert_eq!(n * n, pairs.len());
-    // Check if this is paired with other
-    if pairs[a * n + b] {
-        return true;
-    }
-
-    for i in 0..n {
-        if i == a {
-            // pointless to check self again
-            continue;
-        }
-        if i == exclude {
-            // never go backwards
-            continue;
-        }
-        if pairs[a * n + i] {
-            // is a neighbor already
-            if is_connected(i, b, pairs, a) {
-                return true;
-            }
-        }
-    }
-
-    false
-}
-
 #[derive(Debug)]
 struct Pairing {
     a: usize,
