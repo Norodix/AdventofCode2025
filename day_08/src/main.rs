@@ -55,6 +55,25 @@ fn main() {
     // println!("{}", solve2("input"));
 }
 
+// Because of bad problem statement I created and relied on a recursive connection test
+// With the actual problem, a complete connection matrix can be maintained which is faster
+fn connect(connections: &mut Vec<bool>, a: usize, b: usize) {
+    let n = connections.len().isqrt();
+    assert_eq!(n * n, connections.len());
+    // a gets connected to everything b is connected to
+    // b gets connected to everything a is connected to
+    for i in 0..n {
+        if connections[b * n + i] {
+            connections[a * n + i] = true;
+            connections[i * n + a] = true;
+        }
+        if connections[a * n + i] {
+            connections[b * n + i] = true;
+            connections[i * n + b] = true;
+        }
+    }
+}
+
 fn solve(filepath: &str, iterations: usize) -> u64 {
     // read lines into vector of nodes
     let f = std::fs::read_to_string(filepath).expect("File could not be read");
@@ -90,9 +109,9 @@ fn solve(filepath: &str, iterations: usize) -> u64 {
     // TODO duplicate info, could be improved
     // create n*n connection vector
     let mut connections: Vec<bool> = vec![];
-    for _i in 0..len {
-        for _j in 0..len {
-            connections.push(false);
+    for i in 0..len {
+        for j in 0..len {
+            connections.push(i == j);
         }
     }
 
@@ -104,22 +123,33 @@ fn solve(filepath: &str, iterations: usize) -> u64 {
 
     // Add first <iterations> connections while skipping already connected nodes (avoid loops)
     // This is stupid, but actually i should be used... bad problem statement
-    let mut connections_made = 0;
-    let mut i = 0;
-
-    while i < iterations {
+    for i in 0..iterations {
         let a = pairings[i].a;
         let b = pairings[i].b;
-        // if a not connected to b in other ways
-        if is_connected(a, b, &connections, a) {
-            println!("Skipped {a} {b}");
-        } else {
-            connections[a * len + b] = true;
-            connections[b * len + a] = true;
-            connections_made += 1;
-            println!("Connected {a} {b}");
+        connect(&mut connections, a, b);
+    }
+    // for i in 0..len {
+    //     let arr: Vec<usize> = connections[i * len..(i + 1) * len]
+    //         .into_iter()
+    //         .map(|x| if *x { 1 } else { 0 })
+    //         .collect();
+    //     println!("{:?}", arr);
+    // }
+
+    // complete connection matrix
+    for i in 0..len {
+        for j in 0..len {
+            if connections[i * len + j] {
+                connect(&mut connections, i, j);
+            }
         }
-        i += 1;
+    }
+    for i in (0..len).rev() {
+        for j in 0..len {
+            if connections[i * len + j] {
+                connect(&mut connections, i, j);
+            }
+        }
     }
 
     // Every group gets the id of its first element's index
@@ -130,22 +160,23 @@ fn solve(filepath: &str, iterations: usize) -> u64 {
         }
         nodes[i].group_id = i as i32;
         for j in 0..len {
-            // would be faster to compute indirect connection table
-            if is_connected(i, j, &connections, i) {
+            if connections[i * len + j] {
+                if nodes[j].group_id != -1 && nodes[j].group_id != i as i32 {
+                    println!("Unexpected group id connection! {i} {j}");
+                }
                 // this is connected to node[i]
                 nodes[j].group_id = i as i32;
             }
         }
     }
-    // println!("{nodes:?}");
 
     let mut counts = vec![0; len];
     for i in 0..len {
         counts[nodes[i].group_id as usize] += 1;
     }
-    // println!("{counts:?}");
 
     let mut acc: u64 = 1;
+    // this is wasted work
     counts.sort();
     counts.reverse();
     for i in 0..3 {
