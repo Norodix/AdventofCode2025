@@ -22,7 +22,7 @@ struct Pairing {
 
 fn main() {
     println!("{}", solve("input", 1000));
-    // println!("{}", solve2("input"));
+    println!("{}", solve2("input"));
 }
 
 // Because of bad problem statement I created and relied on a recursive connection test
@@ -47,6 +47,17 @@ fn connect(connections: &mut Vec<bool>, a: usize, b: usize) {
             connections[bc * n + ac] = true;
         }
     }
+}
+
+fn is_complete(connections: &Vec<bool>) -> bool {
+    // Since the subgraphs are always complete it is enough to test a single row
+    let n = connections.len().isqrt();
+    for i in 0..n {
+        if connections[i] == false {
+            return false;
+        }
+    }
+    true
 }
 
 fn solve(filepath: &str, iterations: usize) -> u64 {
@@ -139,6 +150,66 @@ fn solve(filepath: &str, iterations: usize) -> u64 {
     acc
 }
 
+fn solve2(filepath: &str) -> u64 {
+    // read lines into vector of nodes
+    let f = std::fs::read_to_string(filepath).expect("File could not be read");
+    let mut nodes: Vec<Node> = vec![];
+    for l in f.lines() {
+        let mut p = l.split(',');
+        let n: Node = Node {
+            pos: [
+                p.next().unwrap().parse().unwrap(),
+                p.next().unwrap().parse().unwrap(),
+                p.next().unwrap().parse().unwrap(),
+            ],
+            group_id: -1,
+        };
+        nodes.push(n);
+    }
+    let len = nodes.len();
+
+    // create n*n vector of each pairing
+    // precompute distances
+    let mut pairings: Vec<Pairing> = vec![];
+    for i in 0..len {
+        for j in (i + 1)..len {
+            let p = Pairing {
+                a: i,
+                b: j,
+                d2: nodes[i].distance2(&nodes[j]),
+            };
+            pairings.push(p);
+        }
+    }
+
+    // TODO duplicate info, could be improved
+    // create n*n connection vector
+    let mut connections: Vec<bool> = vec![];
+    for i in 0..len {
+        for j in 0..len {
+            connections.push(i == j);
+        }
+    }
+
+    // sort pairings by distance
+    pairings.sort_by(|a, b| a.d2.cmp(&b.d2));
+    // for p in &pairings {
+    //     println!("{p:?}");
+    // }
+
+    let mut index = 0;
+    while !is_complete(&connections) {
+        let a = pairings[index].a;
+        let b = pairings[index].b;
+        connect(&mut connections, a, b);
+        index += 1;
+    }
+    index -= 1;
+
+    println!("Last iteration needed for completeness was {index}");
+    nodes[pairings[index].a].pos[0] as u64 * nodes[pairings[index].b].pos[0] as u64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,5 +217,10 @@ mod tests {
     #[test]
     fn example() {
         assert_eq!(solve("example", 10), 40);
+    }
+
+    #[test]
+    fn example2() {
+        assert_eq!(solve2("example"), 25272);
     }
 }
