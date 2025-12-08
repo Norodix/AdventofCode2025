@@ -60,16 +60,21 @@ fn main() {
 fn connect(connections: &mut Vec<bool>, a: usize, b: usize) {
     let n = connections.len().isqrt();
     assert_eq!(n * n, connections.len());
-    // a gets connected to everything b is connected to
-    // b gets connected to everything a is connected to
+    // every connection of a to every connection of b
+    let mut a_conn: Vec<usize> = vec![];
+    let mut b_conn: Vec<usize> = vec![];
     for i in 0..n {
         if connections[b * n + i] {
-            connections[a * n + i] = true;
-            connections[i * n + a] = true;
+            b_conn.push(i);
         }
         if connections[a * n + i] {
-            connections[b * n + i] = true;
-            connections[i * n + b] = true;
+            a_conn.push(i);
+        }
+    }
+    for ac in &a_conn {
+        for bc in &b_conn {
+            connections[ac * n + bc] = true;
+            connections[bc * n + ac] = true;
         }
     }
 }
@@ -127,29 +132,6 @@ fn solve(filepath: &str, iterations: usize) -> u64 {
         let a = pairings[i].a;
         let b = pairings[i].b;
         connect(&mut connections, a, b);
-    }
-    // for i in 0..len {
-    //     let arr: Vec<usize> = connections[i * len..(i + 1) * len]
-    //         .into_iter()
-    //         .map(|x| if *x { 1 } else { 0 })
-    //         .collect();
-    //     println!("{:?}", arr);
-    // }
-
-    // complete connection matrix
-    for i in 0..len {
-        for j in 0..len {
-            if connections[i * len + j] {
-                connect(&mut connections, i, j);
-            }
-        }
-    }
-    for i in (0..len).rev() {
-        for j in 0..len {
-            if connections[i * len + j] {
-                connect(&mut connections, i, j);
-            }
-        }
     }
 
     // Every group gets the id of its first element's index
