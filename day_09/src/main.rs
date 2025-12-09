@@ -39,24 +39,18 @@ fn solve(filepath: &str) -> u64 {
     // create n*n vector of each pairing
     // precompute areas
     let mut pairings: Vec<Pairing> = vec![];
+    let mut max_area = 0_i64;
     for i in 0..len {
         for j in (i + 1)..len {
-            let p = Pairing {
-                a: i,
-                b: j,
-                area: {
-                    ((nodes[i].pos[0] - nodes[j].pos[0]).abs() + 1)
-                        * ((nodes[i].pos[1] - nodes[j].pos[1]).abs() + 1)
-                },
-            };
-            pairings.push(p);
+            let area = ((nodes[i].pos[0] - nodes[j].pos[0]).abs() + 1)
+                * ((nodes[i].pos[1] - nodes[j].pos[1]).abs() + 1);
+            if area > max_area {
+                max_area = area;
+            }
         }
     }
 
-    // sort pairings by distance
-    pairings.sort_by(|a, b| a.area.cmp(&b.area));
-
-    pairings.last().unwrap().area as u64
+    max_area as u64
 }
 
 #[cfg(test)]
