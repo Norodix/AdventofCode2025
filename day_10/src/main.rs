@@ -1,3 +1,6 @@
+use good_lp::{
+    Constraint, Expression, Solution, SolverModel, constraint, default_solver, variable, variables,
+};
 use regex::Regex;
 use std::{collections::HashMap, hash::Hash, io::Write};
 
@@ -170,6 +173,39 @@ fn reduce_machine(jm: &mut JoltMachine, hm: &mut HashMap<Vec<u32>, u64>) -> u64 
     min + 1
 }
 
+fn solve_machine(m: JoltMachine) -> u64 {
+    variables! {vars: 0 <= x[m.toggles.len()] (integer); }
+
+    let mut cnstr: Vec<Constraint> = vec![];
+    let mut total: Expression = 0.into();
+    for xi in &x {
+        total += xi;
+    }
+    let mut solution = vars.minimise(total).using(default_solver);
+    for j in 0..m.jolts.len() {
+        let e: &mut Expression = &mut Expression::with_capacity(100);
+        for t in 0..m.toggles.len() {
+            let coeff = if m.toggles[t].contains(&(j as u32)) {
+                1
+            } else {
+                0
+            };
+            e.add_mul(coeff, x[t]);
+        }
+        let e: Expression = e.clone();
+        let e = e.eq(m.jolts[j]);
+        println!("{:?}", &e);
+        // cnstr.push(e);
+        solution = solution.with(e);
+    }
+    let s = solution.solve().unwrap();
+    let mut sum = 0;
+    for xi in &x {
+        sum += s.value(*xi) as u64;
+    }
+    sum
+}
+
 fn solve2(filepath: &str) -> u64 {
     let f = std::fs::read_to_string(filepath).expect("File could not be read");
     let re_toggles = Regex::new(r"\(([^)]*)\)").unwrap();
@@ -196,22 +232,14 @@ fn solve2(filepath: &str) -> u64 {
         machines.push(m);
     }
 
-    println!("Machines: ");
-    for m in machines {
-        println!("Lights: {}\tToggles: {}", m.jolts.len(), m.toggles.len());
-    }
-
-    return 0;
-
+    // println!("Machines: ");
+    // Too low ->15375
     let mut sum = 0;
-    let mut hm: HashMap<Vec<u32>, u64> = HashMap::new();
-    for m in 0..machines.len() {
-        print!("Solving {m}/{}\r", machines.len());
-        std::io::stdout().flush().unwrap();
-        hm.clear();
-        let min_steps = reduce_machine(&mut machines[m], &mut hm);
-        sum += min_steps;
+    for m in machines {
+        // println!("Lights: {}\tToggles: {}", m.jolts.len(), m.toggles.len());
+        sum += solve_machine(m);
     }
+
     sum
 }
 
